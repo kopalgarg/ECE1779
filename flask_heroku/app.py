@@ -1,62 +1,41 @@
-"""
-Flask Documentation:     http://flask.pocoo.org/docs/
-Jinja2 Documentation:    http://jinja.pocoo.org/2/documentation/
-Werkzeug Documentation:  http://werkzeug.pocoo.org/documentation/
-
-This file creates your application.
-"""
-
-import os
-from flask import Flask, render_template, request, redirect, url_for
+import requests
+from flask import Flask, render_template, request
+from flask_sqlalchemy import SQLAlchemy 
 
 app = Flask(__name__)
+app.config['DEBUG'] = True
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///weather.db'
 
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'this_should_be_configured')
+db = SQLAlchemy(app)
 
+class City(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
 
-###
-# Routing for your application.
-###
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        new_city = request.form.get('city')
+        
+        if new_city:
+            new_city_obj = City(name=new_city)
 
-@app.route('/')
-def home():
-    """Render website's home page."""
-    return render_template('home.html')
+            db.session.add(new_city_obj)
+            db.session.commit()
 
+    city = City.query.all()[-1]
 
-@app.route('/about/')
-def about():
-    """Render the website's about page."""
-    return render_template('about.html')
-
-
-###
-# The functions below should be applicable to all Flask apps.
-###
-
-@app.route('/<file_name>.txt')
-def send_text_file(file_name):
-    """Send your static text file."""
-    file_dot_text = file_name + '.txt'
-    return app.send_static_file(file_dot_text)
-
-
-@app.after_request
-def add_header(response):
-    """
-    Add headers to both force latest IE rendering engine or Chrome Frame,
-    and also to cache the rendered page for 10 minutes.
-    """
-    response.headers['X-UA-Compatible'] = 'IE=Edge,chrome=1'
-    response.headers['Cache-Control'] = 'public, max-age=600'
-    return response
-
-
-@app.errorhandler(404)
-def page_not_found(error):
-    """Custom 404 page."""
-    return render_template('404.html'), 404
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
+    url = 'http://api.openweathermap.org/data/2.5/weather?q={}&units=metric&appid=271d1234d3f497eed5b1d80a07b3fcd1'
+    url_14 = 'http://pro.openweathermap.org/data/2.5/forecast/hourly?q={}&appid=271d1234d3f497eed5b1d80a07b3fcd1'
+    r = requests.get(url.format(city.name)).json()
+    r_14 = requests.get(url_14.format(city.name)).json()
+   
+    weather = {
+            'city' : city.name,
+            'country': r['sys']['country'],
+            'temperature' : r['main']['temp'],
+            'description' : r['weather'][0]['description'],
+            'icon' : r['weather'][0]['icon'],
+    }
+    print(r_14)
+    return render_template('weather.html', weather=weather)
