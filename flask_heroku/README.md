@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+# ECE1779
+Intro to Cloud Computing
+=======
 Flask Heroku
 ============
 
@@ -221,3 +225,4 @@ Lastly, add the following A records to your DNS management tool.
     75.101.163.44
     75.101.145.87
     174.129.212.2
+>>>>>>> 624ba14 (test commit)
